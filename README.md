@@ -4,7 +4,7 @@ A collaborative virtual study platform with synchronized timers, themed study ro
 
 ## Demo
 
-🔗 [Live Demo](https://your-demo-link.netlify.app)
+🔗 [Live Demo](https://study-focus-app-comp-pyk1.bolt.host)
 
 ## Features
 
