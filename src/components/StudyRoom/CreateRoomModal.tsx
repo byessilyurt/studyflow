@@ -31,7 +31,7 @@ export const CreateRoomModal = ({ isOpen, onClose, onCreate, currentUser }: Crea
     }
 
     const newRoom: StudyRoom = {
-      id: generateRandomId(),
+      id: '',
       name: formData.name,
       subject: formData.subject,
       theme: formData.theme,

@@ -39,11 +39,19 @@ export const RoomBrowser = ({ onJoinRoom }: RoomBrowserProps) => {
         creatorId: state.currentUser.id,
       });
 
-      dispatch({ type: 'ADD_ROOM', payload: room });
+      const transformedRoom = {
+        ...room,
+        id: newRoom.id,
+        creator: state.currentUser.name,
+        createdAt: new Date(newRoom.created_at),
+        currentUsers: [],
+      };
+
+      dispatch({ type: 'ADD_ROOM', payload: transformedRoom });
       onJoinRoom(newRoom.id);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating room:', error);
-      alert('Failed to create room. Please try again.');
+      alert(error.message || 'Failed to create room. Please try again.');
     }
   };
 
