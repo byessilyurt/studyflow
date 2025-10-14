@@ -24,7 +24,12 @@ export const CreateRoomModal = ({ isOpen, onClose, onCreate, currentUser }: Crea
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
+    if (!currentUser) {
+      alert('You must be logged in to create a room');
+      return;
+    }
+
     const newRoom: StudyRoom = {
       id: generateRandomId(),
       name: formData.name,
@@ -36,15 +41,14 @@ export const CreateRoomModal = ({ isOpen, onClose, onCreate, currentUser }: Crea
       timeRemaining: 300,
       sessionType: 'break',
       musicTrack: formData.musicTrack,
-      creator: currentUser.id,
+      creator: currentUser.name,
       createdAt: new Date(),
       totalStudyTime: 0
     };
 
     onCreate(newRoom);
     onClose();
-    
-    // Reset form
+
     setFormData({
       name: '',
       subject: 'Mathematics',
