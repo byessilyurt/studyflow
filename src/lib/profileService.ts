@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { calculateLevel } from '../utils/helpers';
 
 export const profileService = {
   async getProfile(userId: string) {
@@ -9,6 +10,18 @@ export const profileService = {
       .maybeSingle();
 
     if (error) throw error;
+
+    if (data) {
+      const calculatedLevel = calculateLevel(data.focus_time);
+      if (calculatedLevel !== data.level) {
+        await supabase
+          .from('profiles')
+          .update({ level: calculatedLevel })
+          .eq('id', userId);
+        data.level = calculatedLevel;
+      }
+    }
+
     return data;
   },
 

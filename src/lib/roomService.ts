@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import type { StudyRoom, User } from '../types';
+import { profileService } from './profileService';
 
 export const roomService = {
   async getAllRooms() {
@@ -115,7 +116,7 @@ export const roomService = {
   async leaveRoom(roomId: string, userId: string) {
     const { error } = await supabase
       .from('room_participants')
-      .update({ is_active: false })
+      .delete()
       .eq('room_id', roomId)
       .eq('user_id', userId);
 
@@ -159,8 +160,43 @@ export const roomService = {
             sessions_completed: profile.sessions_completed + 1,
           })
           .eq('id', userId);
+
+        await profileService.checkAndAwardAchievements(userId);
       }
     }
+
+    const { data: participants, error: countError } = await supabase
+      .from('room_participants')
+      .select('id')
+      .eq('room_id', roomId);
+
+    if (!countError && participants && participants.length === 0) {
+      await this.deleteRoom(roomId);
+    }
+  },
+
+  async deleteRoom(roomId: string) {
+    await supabase
+      .from('room_participants')
+      .delete()
+      .eq('room_id', roomId);
+
+    await supabase
+      .from('chat_messages')
+      .delete()
+      .eq('room_id', roomId);
+
+    await supabase
+      .from('study_sessions')
+      .delete()
+      .eq('room_id', roomId);
+
+    const { error } = await supabase
+      .from('study_rooms')
+      .delete()
+      .eq('id', roomId);
+
+    if (error) throw error;
   },
 
   async updateRoomTimer(roomId: string, timeRemaining: number, isStudying: boolean, sessionType: 'study' | 'break') {

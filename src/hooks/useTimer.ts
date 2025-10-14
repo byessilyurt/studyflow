@@ -44,8 +44,22 @@ export const useTimer = ({ onSessionComplete }: UseTimerProps = {}) => {
       dispatch({
         type: 'UPDATE_TIMER',
         payload: {
-          timeRemaining: isStudySession ? 1500 : 300, // 25 min study, 5 min break
+          timeRemaining: isStudySession ? 1500 : 300,
           sessionType: isStudySession ? 'study' : 'break'
+        }
+      });
+    }
+  };
+
+  const setCustomDuration = (minutes: number) => {
+    setIsRunning(false);
+    sessionStartRef.current = null;
+    if (state.currentRoom) {
+      dispatch({
+        type: 'UPDATE_TIMER',
+        payload: {
+          timeRemaining: minutes * 60,
+          sessionType: state.currentRoom.sessionType
         }
       });
     }
@@ -101,6 +115,7 @@ export const useTimer = ({ onSessionComplete }: UseTimerProps = {}) => {
     startTimer,
     stopTimer,
     resetTimer,
+    setCustomDuration,
     timeRemaining: state.currentRoom?.timeRemaining || 0,
     sessionType: state.currentRoom?.sessionType || 'study'
   };

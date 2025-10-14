@@ -36,7 +36,11 @@ export const chatService = {
 
   subscribeToMessages(roomId: string, callback: (payload: any) => void) {
     const channel = supabase
-      .channel(`chat:${roomId}`)
+      .channel(`chat:${roomId}`, {
+        config: {
+          broadcast: { self: true },
+        },
+      })
       .on(
         'postgres_changes',
         {
@@ -60,10 +64,12 @@ export const chatService = {
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Chat subscription status:', status);
+      });
 
     return () => {
-      supabase.removeChannel(channel);
+      channel.unsubscribe();
     };
   },
 };

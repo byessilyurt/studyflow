@@ -39,9 +39,9 @@ export const themes: { name: ThemeName; label: string; description: string; imag
   }
 ];
 
-export const musicTracks: { name: MusicTrack; label: string; description: string }[] = [
-  { name: 'lofi-study', label: 'Lo-fi Study', description: 'Chill beats for focus' },
-  { name: 'classical', label: 'Classical', description: 'Peaceful orchestral music' },
+export const musicTracks: { name: MusicTrack; label: string; description: string; url?: string }[] = [
+  { name: 'lofi-study', label: 'Lo-fi Study', description: 'Chill beats for focus', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3' },
+  { name: 'classical', label: 'Classical', description: 'Peaceful orchestral music', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3' },
   { name: 'rain-sounds', label: 'Rain Sounds', description: 'Natural rain ambiance' },
   { name: 'forest-ambiance', label: 'Forest Sounds', description: 'Birds and nature' },
   { name: 'cafe-sounds', label: 'Café Ambiance', description: 'Coffee shop atmosphere' },
