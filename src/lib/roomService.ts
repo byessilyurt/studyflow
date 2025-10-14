@@ -58,10 +58,18 @@ export const roomService = {
 
     if (error) throw error;
 
-    await supabase
+    const { data: profile } = await supabase
       .from('profiles')
-      .update({ rooms_created: supabase.raw('rooms_created + 1') })
-      .eq('id', room.creatorId);
+      .select('rooms_created')
+      .eq('id', room.creatorId)
+      .single();
+
+    if (profile) {
+      await supabase
+        .from('profiles')
+        .update({ rooms_created: profile.rooms_created + 1 })
+        .eq('id', room.creatorId);
+    }
 
     return data;
   },
@@ -77,10 +85,18 @@ export const roomService = {
 
     if (participantError) throw participantError;
 
-    await supabase
+    const { data: profile } = await supabase
       .from('profiles')
-      .update({ rooms_joined: supabase.raw('rooms_joined + 1') })
-      .eq('id', userId);
+      .select('rooms_joined')
+      .eq('id', userId)
+      .single();
+
+    if (profile) {
+      await supabase
+        .from('profiles')
+        .update({ rooms_joined: profile.rooms_joined + 1 })
+        .eq('id', userId);
+    }
 
     const { data, error } = await supabase
       .from('study_sessions')
@@ -129,13 +145,21 @@ export const roomService = {
         })
         .eq('id', session.id);
 
-      await supabase
+      const { data: profile } = await supabase
         .from('profiles')
-        .update({
-          focus_time: supabase.raw(`focus_time + ${focusTime}`),
-          sessions_completed: supabase.raw('sessions_completed + 1'),
-        })
-        .eq('id', userId);
+        .select('focus_time, sessions_completed')
+        .eq('id', userId)
+        .single();
+
+      if (profile) {
+        await supabase
+          .from('profiles')
+          .update({
+            focus_time: profile.focus_time + focusTime,
+            sessions_completed: profile.sessions_completed + 1,
+          })
+          .eq('id', userId);
+      }
     }
   },
 
