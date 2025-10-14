@@ -7,7 +7,6 @@ import { LeaderboardPage } from './pages/LeaderboardPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { StudyRoomInterface } from './components/StudyRoom/StudyRoomInterface';
 import { LoginModal } from './components/Auth/LoginModal';
-import { mockUsers } from './data/mockData';
 
 function AppContent() {
   const { state, dispatch } = useAppContext();
@@ -15,17 +14,17 @@ function AppContent() {
   const [currentRoomId, setCurrentRoomId] = useState<string | null>(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
 
-  // Auto-login for demo purposes
   useEffect(() => {
-    if (!state.currentUser && !showLoginModal) {
-      // Auto-login with the first mock user for demo
-      const demoUser = mockUsers[0];
-      dispatch({ type: 'SET_USER', payload: demoUser });
+    if (!state.currentUser && !state.isAuthenticated) {
+      const timer = setTimeout(() => {
+        setShowLoginModal(true);
+      }, 500);
+      return () => clearTimeout(timer);
     }
-  }, [state.currentUser, dispatch, showLoginModal]);
+  }, [state.currentUser, state.isAuthenticated]);
 
-  const handleLogin = (user: any) => {
-    dispatch({ type: 'SET_USER', payload: user });
+  const handleLogin = () => {
+    setShowLoginModal(false);
   };
 
   const handleJoinRoom = (roomId: string) => {

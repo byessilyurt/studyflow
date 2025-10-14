@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
 import { User, StudyRoom, ChatMessage, StudySession, UserStats } from '../types';
-import { mockUsers, mockRooms } from '../data/mockData';
+import { authService } from '../lib/auth';
+import { profileService } from '../lib/profileService';
+import { roomService } from '../lib/roomService';
 
 interface AppState {
   currentUser: User | null;
@@ -27,8 +29,8 @@ type AppAction =
 const initialState: AppState = {
   currentUser: null,
   currentRoom: null,
-  rooms: mockRooms,
-  users: mockUsers,
+  rooms: [],
+  users: [],
   chatMessages: [],
   userStats: {
     totalFocusTime: 0,
@@ -169,27 +171,87 @@ export const useAppContext = () => {
 export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [state, dispatch] = useReducer(appReducer, initialState);
 
-  // Load data from localStorage on mount
   useEffect(() => {
-    const savedUser = localStorage.getItem('study-focus-user');
-    const savedStats = localStorage.getItem('study-focus-stats');
-    
-    if (savedUser && savedStats) {
-      const user = JSON.parse(savedUser);
-      const stats = JSON.parse(savedStats);
-      
-      dispatch({ type: 'SET_USER', payload: user });
-      dispatch({ type: 'UPDATE_USER_STATS', payload: stats });
-    }
+    const { data } = authService.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        try {
+          const profile = await profileService.getProfile(session.user.id);
+          if (profile) {
+            const user: User = {
+              id: profile.id,
+              name: profile.name,
+              avatar: profile.avatar,
+              focusTime: profile.focus_time,
+              currentStreak: profile.current_streak,
+              isAI: false,
+              level: profile.level,
+              experience: profile.experience,
+              achievements: [],
+            };
+            dispatch({ type: 'SET_USER', payload: user });
+            dispatch({ type: 'UPDATE_USER_STATS', payload: {
+              totalFocusTime: profile.focus_time,
+              sessionsCompleted: profile.sessions_completed,
+              currentStreak: profile.current_streak,
+              longestStreak: profile.longest_streak,
+              roomsCreated: profile.rooms_created,
+              roomsJoined: profile.rooms_joined,
+              level: profile.level,
+              experience: profile.experience,
+            }});
+          }
+        } catch (error) {
+          console.error('Error loading profile:', error);
+        }
+      } else if (event === 'SIGNED_OUT') {
+        dispatch({ type: 'LOAD_DATA', payload: initialState });
+      }
+    });
+
+    return () => {
+      data.subscription.unsubscribe();
+    };
   }, []);
 
-  // Save user data to localStorage whenever it changes
   useEffect(() => {
-    if (state.currentUser && state.isAuthenticated) {
-      localStorage.setItem('study-focus-user', JSON.stringify(state.currentUser));
-      localStorage.setItem('study-focus-stats', JSON.stringify(state.userStats));
+    const loadRooms = async () => {
+      try {
+        const rooms = await roomService.getAllRooms();
+        const transformedRooms: StudyRoom[] = rooms.map((room: any) => ({
+          id: room.id,
+          name: room.name,
+          subject: room.subject,
+          theme: room.theme,
+          currentUsers: room.participants?.map((p: any) => ({
+            id: p.user.id,
+            name: p.user.name,
+            avatar: p.user.avatar,
+            focusTime: p.user.focus_time,
+            currentStreak: p.user.current_streak,
+            isAI: false,
+            level: p.user.level,
+            experience: p.user.experience,
+            achievements: [],
+          })) || [],
+          maxUsers: room.max_users,
+          isStudying: room.is_studying,
+          timeRemaining: room.time_remaining,
+          sessionType: room.session_type as 'study' | 'break',
+          musicTrack: room.music_track as any,
+          creator: room.creator.name,
+          createdAt: new Date(room.created_at),
+          totalStudyTime: room.total_study_time,
+        }));
+        dispatch({ type: 'LOAD_DATA', payload: { rooms: transformedRooms } });
+      } catch (error) {
+        console.error('Error loading rooms:', error);
+      }
+    };
+
+    if (state.isAuthenticated) {
+      loadRooms();
     }
-  }, [state.currentUser, state.userStats, state.isAuthenticated]);
+  }, [state.isAuthenticated]);
 
   return (
     <AppContext.Provider value={{ state, dispatch }}>

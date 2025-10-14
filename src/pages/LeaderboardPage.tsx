@@ -1,17 +1,59 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Trophy, Clock, Flame, Star, Crown, Medal, Award } from 'lucide-react';
 import { Card } from '../components/UI/Card';
 import { Button } from '../components/UI/Button';
 import { useAppContext } from '../context/AppContext';
 import { getAvatarUrl, formatDuration } from '../utils/helpers';
-import { achievements } from '../data/mockData';
+import { profileService } from '../lib/profileService';
+import type { User } from '../types';
 
 export const LeaderboardPage = () => {
   const { state } = useAppContext();
   const [activeTab, setActiveTab] = useState<'focus' | 'streak' | 'level'>('focus');
+  const [leaderboardUsers, setLeaderboardUsers] = useState<User[]>([]);
+  const [userAchievements, setUserAchievements] = useState<any[]>([]);
+  const [allAchievements, setAllAchievements] = useState<any[]>([]);
 
-  // Sort users based on active tab
-  const sortedUsers = [...state.users].sort((a, b) => {
+  useEffect(() => {
+    const loadLeaderboard = async () => {
+      try {
+        const profiles = await profileService.getLeaderboard(50);
+        const users: User[] = profiles.map(profile => ({
+          id: profile.id,
+          name: profile.name,
+          avatar: profile.avatar,
+          focusTime: profile.focus_time,
+          currentStreak: profile.current_streak,
+          isAI: false,
+          level: profile.level,
+          experience: profile.experience,
+          achievements: [],
+        }));
+        setLeaderboardUsers(users);
+      } catch (error) {
+        console.error('Error loading leaderboard:', error);
+      }
+    };
+
+    const loadAchievements = async () => {
+      try {
+        const achievements = await profileService.getAllAchievements();
+        setAllAchievements(achievements);
+
+        if (state.currentUser) {
+          const earned = await profileService.getUserAchievements(state.currentUser.id);
+          setUserAchievements(earned);
+        }
+      } catch (error) {
+        console.error('Error loading achievements:', error);
+      }
+    };
+
+    loadLeaderboard();
+    loadAchievements();
+  }, [state.currentUser]);
+
+  const sortedUsers = [...leaderboardUsers].sort((a, b) => {
     switch (activeTab) {
       case 'focus':
         return b.focusTime - a.focusTime;
@@ -213,21 +255,19 @@ export const LeaderboardPage = () => {
               
               {state.currentUser ? (
                 <div className="space-y-3">
-                  {achievements
-                    .filter(achievement => state.currentUser?.achievements.includes(achievement.id))
-                    .map(achievement => (
-                      <div key={achievement.id} className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-lg flex items-center justify-center">
-                          <Trophy className="w-5 h-5 text-white" />
-                        </div>
-                        <div>
-                          <p className="font-medium text-gray-900 text-sm">{achievement.name}</p>
-                          <p className="text-xs text-gray-600">{achievement.description}</p>
-                        </div>
+                  {userAchievements.map(ua => (
+                    <div key={ua.id} className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-lg flex items-center justify-center">
+                        <Trophy className="w-5 h-5 text-white" />
                       </div>
-                    ))}
-                  
-                  {state.currentUser.achievements.length === 0 && (
+                      <div>
+                        <p className="font-medium text-gray-900 text-sm">{ua.achievement.name}</p>
+                        <p className="text-xs text-gray-600">{ua.achievement.description}</p>
+                      </div>
+                    </div>
+                  ))}
+
+                  {userAchievements.length === 0 && (
                     <p className="text-gray-500 text-sm text-center py-4">
                       Start studying to earn achievements!
                     </p>
@@ -242,9 +282,9 @@ export const LeaderboardPage = () => {
 
             <Card variant="elevated" className="p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Available Achievements</h3>
-              
+
               <div className="space-y-3">
-                {achievements.slice(0, 5).map(achievement => (
+                {allAchievements.slice(0, 5).map(achievement => (
                   <div key={achievement.id} className="flex items-center space-x-3 opacity-60">
                     <div className="w-8 h-8 bg-gray-300 rounded-lg flex items-center justify-center">
                       <Trophy className="w-4 h-4 text-gray-500" />

@@ -6,6 +6,7 @@ import { Button } from '../components/UI/Button';
 import { Card } from '../components/UI/Card';
 import { useAppContext } from '../context/AppContext';
 import { subjects } from '../data/mockData';
+import { roomService } from '../lib/roomService';
 
 interface RoomBrowserProps {
   onJoinRoom: (roomId: string) => void;
@@ -25,14 +26,38 @@ export const RoomBrowser = ({ onJoinRoom }: RoomBrowserProps) => {
     return matchesSearch && matchesSubject;
   });
 
-  const handleCreateRoom = (room: any) => {
-    dispatch({ type: 'ADD_ROOM', payload: room });
-    onJoinRoom(room.id);
+  const handleCreateRoom = async (room: any) => {
+    if (!state.currentUser) return;
+
+    try {
+      const newRoom = await roomService.createRoom({
+        name: room.name,
+        subject: room.subject,
+        theme: room.theme,
+        maxUsers: room.maxUsers,
+        musicTrack: room.musicTrack,
+        creatorId: state.currentUser.id,
+      });
+
+      dispatch({ type: 'ADD_ROOM', payload: room });
+      onJoinRoom(newRoom.id);
+    } catch (error) {
+      console.error('Error creating room:', error);
+      alert('Failed to create room. Please try again.');
+    }
   };
 
-  const handleJoinRoom = (room: any) => {
-    dispatch({ type: 'JOIN_ROOM', payload: room });
-    onJoinRoom(room.id);
+  const handleJoinRoom = async (room: any) => {
+    if (!state.currentUser) return;
+
+    try {
+      await roomService.joinRoom(room.id, state.currentUser.id);
+      dispatch({ type: 'JOIN_ROOM', payload: room });
+      onJoinRoom(room.id);
+    } catch (error) {
+      console.error('Error joining room:', error);
+      alert('Failed to join room. Please try again.');
+    }
   };
 
   return (

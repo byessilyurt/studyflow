@@ -1,7 +1,8 @@
 import React from 'react';
-import { BookOpen, User, Trophy, Settings } from 'lucide-react';
+import { BookOpen, User, Trophy, Settings, LogOut } from 'lucide-react';
 import { useAppContext } from '../../context/AppContext';
 import { getAvatarUrl, formatDuration } from '../../utils/helpers';
+import { authService } from '../../lib/auth';
 
 interface HeaderProps {
   currentPage: string;
@@ -11,6 +12,15 @@ interface HeaderProps {
 export const Header = ({ currentPage, onNavigate }: HeaderProps) => {
   const { state } = useAppContext();
   const { currentUser, userStats } = state;
+
+  const handleLogout = async () => {
+    try {
+      await authService.signOut();
+      onNavigate('landing');
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
 
   return (
     <header className="bg-white shadow-sm border-b border-gray-200">
@@ -72,19 +82,28 @@ export const Header = ({ currentPage, onNavigate }: HeaderProps) => {
               </div>
 
               {/* Avatar */}
-              <button
-                onClick={() => onNavigate('profile')}
-                className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 transition-colors"
-              >
-                <img
-                  src={getAvatarUrl(currentUser.avatar)}
-                  alt={currentUser.name}
-                  className="w-8 h-8 rounded-full"
-                />
-                <span className="hidden sm:block text-sm font-medium text-gray-900">
-                  {currentUser.name}
-                </span>
-              </button>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => onNavigate('profile')}
+                  className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                >
+                  <img
+                    src={getAvatarUrl(currentUser.avatar)}
+                    alt={currentUser.name}
+                    className="w-8 h-8 rounded-full"
+                  />
+                  <span className="hidden sm:block text-sm font-medium text-gray-900">
+                    {currentUser.name}
+                  </span>
+                </button>
+                <button
+                  onClick={handleLogout}
+                  className="p-2 rounded-lg hover:bg-gray-100 transition-colors text-gray-600 hover:text-gray-900"
+                  title="Sign out"
+                >
+                  <LogOut className="w-5 h-5" />
+                </button>
+              </div>
             </div>
           )}
         </div>
