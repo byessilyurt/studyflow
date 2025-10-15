@@ -44,172 +44,147 @@ export const roomService = {
     musicTrack: string;
     creatorId: string;
   }) {
-    const { data, error } = await supabase
-      .from('study_rooms')
-      .insert({
-        name: room.name,
-        subject: room.subject,
-        theme: room.theme,
-        max_users: room.maxUsers,
-        music_track: room.musicTrack,
-        creator_id: room.creatorId,
-      })
-      .select()
-      .single();
+    const { data, error } = await supabase.rpc('create_room_with_join', {
+      p_name: room.name,
+      p_subject: room.subject,
+      p_theme: room.theme,
+      p_max_users: room.maxUsers,
+      p_music_track: room.musicTrack,
+      p_creator_id: room.creatorId,
+    });
 
     if (error) throw error;
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('rooms_created')
-      .eq('id', room.creatorId)
-      .single();
-
-    if (profile) {
-      await supabase
-        .from('profiles')
-        .update({ rooms_created: profile.rooms_created + 1 })
-        .eq('id', room.creatorId);
-    }
-
-    await supabase
-      .from('room_participants')
-      .insert({
-        room_id: data.id,
-        user_id: room.creatorId,
-        is_active: true,
-      });
-
-    await supabase
-      .from('study_sessions')
-      .insert({
-        user_id: room.creatorId,
-        room_id: data.id,
-        start_time: new Date().toISOString(),
-      });
-
     return data;
   },
 
   async joinRoom(roomId: string, userId: string) {
-    const { error: participantError } = await supabase
-      .from('room_participants')
-      .insert({
-        room_id: roomId,
-        user_id: userId,
-        is_active: true,
-      });
-
-    if (participantError) throw participantError;
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('rooms_joined')
-      .eq('id', userId)
-      .single();
-
-    if (profile) {
-      await supabase
-        .from('profiles')
-        .update({ rooms_joined: profile.rooms_joined + 1 })
-        .eq('id', userId);
-    }
-
-    const { data, error } = await supabase
-      .from('study_sessions')
-      .insert({
-        user_id: userId,
-        room_id: roomId,
-        start_time: new Date().toISOString(),
-      })
-      .select()
-      .single();
+    const { data, error } = await supabase.rpc('join_room_safe', {
+      p_room_id: roomId,
+      p_user_id: userId,
+    });
 
     if (error) throw error;
+
+    if (!data.success) {
+      throw new Error(data.error || 'Failed to join room');
+    }
+
     return data;
   },
 
   async leaveRoom(roomId: string, userId: string) {
+    const { data, error } = await supabase.rpc('leave_room_cleanup', {
+      p_room_id: roomId,
+      p_user_id: userId,
+    });
+
+    if (error) throw error;
+
+    if (data.focus_time > 60) {
+      await profileService.checkAndAwardAchievements(userId);
+    }
+
+    return data;
+  },
+
+  async leaveAllRooms(userId: string) {
+    const { error } = await supabase.rpc('leave_all_rooms', {
+      p_user_id: userId,
+    });
+
+    if (error) throw error;
+  },
+
+  async updateParticipantActivity(roomId: string, userId: string) {
     const { error } = await supabase
       .from('room_participants')
-      .delete()
+      .update({ last_activity: new Date().toISOString() })
       .eq('room_id', roomId)
       .eq('user_id', userId);
 
     if (error) throw error;
+  },
 
-    const { data: session } = await supabase
-      .from('study_sessions')
-      .select('*')
-      .eq('room_id', roomId)
-      .eq('user_id', userId)
-      .is('end_time', null)
-      .order('start_time', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+  async updateRoomTimer(roomId: string, timeRemaining: number, isStudying: boolean, sessionType: 'study' | 'break') {
+    const { error } = await supabase
+      .from('study_rooms')
+      .update({
+        time_remaining: timeRemaining,
+        is_studying: isStudying,
+        session_type: sessionType,
+      })
+      .eq('id', roomId);
 
-    if (session) {
-      const endTime = new Date();
-      const startTime = new Date(session.start_time);
-      const focusTime = Math.floor((endTime.getTime() - startTime.getTime()) / 1000);
+    if (error) throw error;
+  },
 
-      await supabase
-        .from('study_sessions')
-        .update({
-          end_time: endTime.toISOString(),
-          focus_time: focusTime,
-          completed: true,
-        })
-        .eq('id', session.id);
+  subscribeToRoom(roomId: string, callback: (payload: any) => void) {
+    const channel = supabase
+      .channel(`room:${roomId}`, {
+        config: {
+          broadcast: { self: true },
+        },
+      })
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'study_rooms',
+          filter: `id=eq.${roomId}`,
+        },
+        callback
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'room_participants',
+          filter: `room_id=eq.${roomId}`,
+        },
+        callback
+      )
+      .subscribe();
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('focus_time, sessions_completed, xp')
-        .eq('id', userId)
-        .single();
+    return () => {
+      channel.unsubscribe();
+    };
+  },
 
-      if (profile) {
-        const xpGained = 10;
-        const newXP = profile.xp + xpGained;
+  subscribeToParticipants(roomId: string, callback: (participants: any[]) => void) {
+    const loadParticipants = async () => {
+      const { data, error } = await supabase
+        .from('room_participants')
+        .select('user:profiles(*)')
+        .eq('room_id', roomId);
 
-        await supabase
-          .from('profiles')
-          .update({
-            focus_time: profile.focus_time + focusTime,
-            sessions_completed: profile.sessions_completed + 1,
-            xp: newXP,
-          })
-          .eq('id', userId);
-
-        const { data: roomStats } = await supabase
-          .from('room_stats')
-          .select('total_sessions, total_focus_time')
-          .eq('room_id', roomId)
-          .single();
-
-        if (roomStats) {
-          await supabase
-            .from('room_stats')
-            .update({
-              total_sessions: roomStats.total_sessions + 1,
-              total_focus_time: roomStats.total_focus_time + focusTime,
-              updated_at: new Date().toISOString(),
-            })
-            .eq('room_id', roomId);
-        }
-
-        await profileService.checkAndAwardAchievements(userId);
+      if (!error && data) {
+        callback(data.map(p => p.user));
       }
-    }
+    };
 
-    const { data: participants, error: countError } = await supabase
-      .from('room_participants')
-      .select('id')
-      .eq('room_id', roomId);
+    loadParticipants();
 
-    if (!countError && participants && participants.length === 0) {
-      await this.deleteRoom(roomId);
-    }
+    const channel = supabase
+      .channel(`participants:${roomId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'room_participants',
+          filter: `room_id=eq.${roomId}`,
+        },
+        () => {
+          loadParticipants();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      channel.unsubscribe();
+    };
   },
 
   async deleteRoom(roomId: string) {
@@ -234,48 +209,5 @@ export const roomService = {
       .eq('id', roomId);
 
     if (error) throw error;
-  },
-
-  async updateRoomTimer(roomId: string, timeRemaining: number, isStudying: boolean, sessionType: 'study' | 'break') {
-    const { error } = await supabase
-      .from('study_rooms')
-      .update({
-        time_remaining: timeRemaining,
-        is_studying: isStudying,
-        session_type: sessionType,
-      })
-      .eq('id', roomId);
-
-    if (error) throw error;
-  },
-
-  subscribeToRoom(roomId: string, callback: (payload: any) => void) {
-    const channel = supabase
-      .channel(`room:${roomId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'study_rooms',
-          filter: `id=eq.${roomId}`,
-        },
-        callback
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'room_participants',
-          filter: `room_id=eq.${roomId}`,
-        },
-        callback
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
   },
 };

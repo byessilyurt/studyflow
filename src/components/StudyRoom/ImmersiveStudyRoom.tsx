@@ -33,7 +33,11 @@ export const ImmersiveStudyRoom = ({ room, onLeave }: ImmersiveStudyRoomProps) =
 
   const { settings, updateSettings } = useUserSettings(state.currentUser?.id);
   const { participants, updateStatus } = usePresence(room.id, state.currentUser);
-  const { cleanup } = useRoomPresence(room.id, state.currentUser?.id);
+  const { leave } = useRoomPresence({
+    roomId: room.id,
+    userId: state.currentUser?.id,
+    onLeave,
+  });
 
   const { isRunning, startTimer, stopTimer, resetTimer, setCustomDuration, timeRemaining, sessionType } = useTimer({
     onSessionComplete: () => {
@@ -86,8 +90,7 @@ export const ImmersiveStudyRoom = ({ room, onLeave }: ImmersiveStudyRoomProps) =
   };
 
   const handleLeave = async () => {
-    await cleanup();
-    onLeave();
+    await leave();
   };
 
   const handleSaveTimer = async (studyMinutes: number, breakMinutes: number) => {
