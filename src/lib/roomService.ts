@@ -72,6 +72,22 @@ export const roomService = {
         .eq('id', room.creatorId);
     }
 
+    await supabase
+      .from('room_participants')
+      .insert({
+        room_id: data.id,
+        user_id: room.creatorId,
+        is_active: true,
+      });
+
+    await supabase
+      .from('study_sessions')
+      .insert({
+        user_id: room.creatorId,
+        room_id: data.id,
+        start_time: new Date().toISOString(),
+      });
+
     return data;
   },
 

@@ -104,3 +104,31 @@
 .slider::-moz-range-thumb:hover {
   transform: scale(1.2);
 }
+
+.slider-white::-webkit-slider-thumb {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.slider-white::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+.slider-white::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: white;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s;
+}
+
+.slider-white::-moz-range-thumb:hover {
+  transform: scale(1.2);
+}

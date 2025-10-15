@@ -6,13 +6,16 @@ import { useTimer } from '../../hooks/useTimer';
 import { useAppContext } from '../../context/AppContext';
 import { usePresence } from '../../hooks/usePresence';
 import { useUserSettings } from '../../hooks/useUserSettings';
+import { useRoomPresence } from '../../hooks/useRoomPresence';
 import { formatTime, getThemeGradient } from '../../utils/helpers';
 import { themes } from '../../data/mockData';
-import { ParticipantRow } from './ParticipantRow';
+import { ClassroomSeating } from './ClassroomSeating';
 import { TimerModal } from './TimerModal';
 import { RoomStatsWidget } from './RoomStatsWidget';
 import { EnhancedChatPanel } from './EnhancedChatPanel';
 import { AmbientSoundMixer } from '../Audio/AmbientSoundMixer';
+import { MusicPlayerAdvanced } from '../Audio/MusicPlayerAdvanced';
+import { aiStudentService } from '../../lib/aiStudentService';
 
 interface ImmersiveStudyRoomProps {
   room: StudyRoom;
@@ -21,13 +24,16 @@ interface ImmersiveStudyRoomProps {
 
 export const ImmersiveStudyRoom = ({ room, onLeave }: ImmersiveStudyRoomProps) => {
   const { state } = useAppContext();
-  const [showChat, setShowChat] = useState(false);
+  const [showChat, setShowChat] = useState(true);
   const [showTimerModal, setShowTimerModal] = useState(false);
   const [notification, setNotification] = useState<string>('');
   const [confetti, setConfetti] = useState(false);
+  const [aiStudents, setAiStudents] = useState<any[]>([]);
+  const [musicPlaying, setMusicPlaying] = useState(false);
 
   const { settings, updateSettings } = useUserSettings(state.currentUser?.id);
   const { participants, updateStatus } = usePresence(room.id, state.currentUser);
+  const { cleanup } = useRoomPresence(room.id, state.currentUser?.id);
 
   const { isRunning, startTimer, stopTimer, resetTimer, setCustomDuration, timeRemaining, sessionType } = useTimer({
     onSessionComplete: () => {
@@ -43,10 +49,31 @@ export const ImmersiveStudyRoom = ({ room, onLeave }: ImmersiveStudyRoomProps) =
   const theme = themes.find(t => t.name === room.theme);
 
   useEffect(() => {
+    const loadAIStudents = async () => {
+      try {
+        const students = await aiStudentService.getAIStudentsForRoom(room.id);
+        setAiStudents(students);
+      } catch (error) {
+        console.error('Error loading AI students:', error);
+      }
+    };
+
+    loadAIStudents();
+
+    const stopAIBehavior = aiStudentService.startAIBehavior(room.id);
+
+    return () => {
+      stopAIBehavior();
+    };
+  }, [room.id]);
+
+  useEffect(() => {
     if (isRunning) {
       updateStatus(sessionType === 'study' ? 'focus' : 'break');
+      setMusicPlaying(true);
     } else {
       updateStatus('idle');
+      setMusicPlaying(false);
     }
   }, [isRunning, sessionType]);
 
@@ -56,6 +83,11 @@ export const ImmersiveStudyRoom = ({ room, onLeave }: ImmersiveStudyRoomProps) =
     } else {
       startTimer();
     }
+  };
+
+  const handleLeave = async () => {
+    await cleanup();
+    onLeave();
   };
 
   const handleSaveTimer = async (studyMinutes: number, breakMinutes: number) => {
@@ -134,7 +166,7 @@ export const ImmersiveStudyRoom = ({ room, onLeave }: ImmersiveStudyRoomProps) =
           <div className="flex items-center justify-between max-w-7xl mx-auto">
             <Button
               variant="ghost"
-              onClick={onLeave}
+              onClick={handleLeave}
               className="text-white bg-black bg-opacity-30 hover:bg-opacity-40 backdrop-blur-md border border-white border-opacity-20"
             >
               <ArrowLeft className="w-5 h-5 mr-2" />
@@ -149,14 +181,17 @@ export const ImmersiveStudyRoom = ({ room, onLeave }: ImmersiveStudyRoomProps) =
             <Button
               variant="ghost"
               onClick={() => setShowChat(!showChat)}
-              className="text-white bg-black bg-opacity-30 hover:bg-opacity-40 backdrop-blur-md border border-white border-opacity-20"
+              className="text-white bg-black bg-opacity-30 hover:bg-opacity-40 backdrop-blur-md border border-white border-opacity-20 relative"
             >
               <MessageSquare className="w-5 h-5" />
+              {!showChat && (
+                <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse" />
+              )}
             </Button>
           </div>
         </div>
 
-        <ParticipantRow participants={participants} />
+        <ClassroomSeating participants={participants} aiStudents={aiStudents} />
 
         <div className="flex-1 flex items-center justify-center p-4">
           <div className="relative">
@@ -273,6 +308,11 @@ export const ImmersiveStudyRoom = ({ room, onLeave }: ImmersiveStudyRoomProps) =
         volumes={settings.ambientVolumes}
         onVolumeChange={handleAmbientVolumeChange}
         isPlaying={isRunning}
+      />
+
+      <MusicPlayerAdvanced
+        isPlaying={musicPlaying}
+        onPlayStateChange={setMusicPlaying}
       />
 
       <TimerModal
