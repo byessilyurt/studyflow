@@ -53,21 +53,25 @@ export const ImmersiveStudyRoom = ({ room, onLeave }: ImmersiveStudyRoomProps) =
   const theme = themes.find(t => t.name === room.theme);
 
   useEffect(() => {
-    const loadAIStudents = async () => {
+    let stopAIBehavior: (() => void) | null = null;
+
+    const initialize = async () => {
       try {
         const students = await aiStudentService.getAIStudentsForRoom(room.id);
         setAiStudents(students);
+
+        stopAIBehavior = await aiStudentService.startAIBehavior(room.id);
       } catch (error) {
-        console.error('Error loading AI students:', error);
+        console.error('Error initializing AI students:', error);
       }
     };
 
-    loadAIStudents();
-
-    const stopAIBehavior = aiStudentService.startAIBehavior(room.id);
+    initialize();
 
     return () => {
-      stopAIBehavior();
+      if (stopAIBehavior) {
+        stopAIBehavior();
+      }
     };
   }, [room.id]);
 
