@@ -7,6 +7,7 @@ import { LeaderboardPage } from './pages/LeaderboardPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { ImmersiveStudyRoom } from './components/StudyRoom/ImmersiveStudyRoom';
 import { LoginModal } from './components/Auth/LoginModal';
+import { roomService } from './lib/roomService';
 
 function AppContent() {
   const { state, dispatch } = useAppContext();
@@ -27,12 +28,35 @@ function AppContent() {
     setShowLoginModal(false);
   };
 
-  const handleJoinRoom = (roomId: string) => {
-    const room = state.rooms.find(r => r.id === roomId);
+  const handleJoinRoom = async (roomId: string) => {
+    setCurrentRoomId(roomId);
+    setCurrentPage('room');
+
+    let room = state.rooms.find(r => r.id === roomId);
+
+    if (!room) {
+      try {
+        const roomData = await roomService.getRoomById(roomId);
+        if (roomData) {
+          room = {
+            id: roomData.id,
+            name: roomData.name,
+            subject: roomData.subject,
+            theme: roomData.theme,
+            maxUsers: roomData.max_users,
+            creator: roomData.creator?.name || 'Unknown',
+            createdAt: new Date(roomData.created_at),
+            currentUsers: roomData.participants?.map((p: any) => p.user) || [],
+          };
+          dispatch({ type: 'ADD_ROOM', payload: room });
+        }
+      } catch (error) {
+        console.error('Error fetching room:', error);
+      }
+    }
+
     if (room) {
       dispatch({ type: 'JOIN_ROOM', payload: room });
-      setCurrentRoomId(roomId);
-      setCurrentPage('room');
     }
   };
 
@@ -59,6 +83,14 @@ function AppContent() {
         {currentPage === 'profile' && <ProfilePage />}
         {currentPage === 'room' && currentRoom && (
           <ImmersiveStudyRoom room={currentRoom} onLeave={handleLeaveRoom} />
+        )}
+        {currentPage === 'room' && !currentRoom && (
+          <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-xl text-gray-700">Loading room...</p>
+            </div>
+          </div>
         )}
       </main>
 

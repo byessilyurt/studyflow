@@ -44,10 +44,12 @@ export const RoomBrowser = ({ onJoinRoom }: RoomBrowserProps) => {
         id: newRoom.id,
         creator: state.currentUser.name,
         createdAt: new Date(newRoom.created_at),
-        currentUsers: [],
+        currentUsers: [state.currentUser],
       };
 
       dispatch({ type: 'ADD_ROOM', payload: transformedRoom });
+      setShowCreateModal(false);
+
       onJoinRoom(newRoom.id);
     } catch (error: any) {
       console.error('Error creating room:', error);
