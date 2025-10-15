@@ -148,18 +148,39 @@ export const roomService = {
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('focus_time, sessions_completed')
+        .select('focus_time, sessions_completed, xp')
         .eq('id', userId)
         .single();
 
       if (profile) {
+        const xpGained = 10;
+        const newXP = profile.xp + xpGained;
+
         await supabase
           .from('profiles')
           .update({
             focus_time: profile.focus_time + focusTime,
             sessions_completed: profile.sessions_completed + 1,
+            xp: newXP,
           })
           .eq('id', userId);
+
+        const { data: roomStats } = await supabase
+          .from('room_stats')
+          .select('total_sessions, total_focus_time')
+          .eq('room_id', roomId)
+          .single();
+
+        if (roomStats) {
+          await supabase
+            .from('room_stats')
+            .update({
+              total_sessions: roomStats.total_sessions + 1,
+              total_focus_time: roomStats.total_focus_time + focusTime,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('room_id', roomId);
+        }
 
         await profileService.checkAndAwardAchievements(userId);
       }

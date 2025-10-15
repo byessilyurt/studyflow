@@ -5,7 +5,7 @@ import { LandingPage } from './pages/LandingPage';
 import { RoomBrowser } from './pages/RoomBrowser';
 import { LeaderboardPage } from './pages/LeaderboardPage';
 import { ProfilePage } from './pages/ProfilePage';
-import { StudyRoomInterface } from './components/StudyRoom/StudyRoomInterface';
+import { ImmersiveStudyRoom } from './components/StudyRoom/ImmersiveStudyRoom';
 import { LoginModal } from './components/Auth/LoginModal';
 
 function AppContent() {
@@ -58,7 +58,7 @@ function AppContent() {
         {currentPage === 'leaderboard' && <LeaderboardPage />}
         {currentPage === 'profile' && <ProfilePage />}
         {currentPage === 'room' && currentRoom && (
-          <StudyRoomInterface room={currentRoom} onLeave={handleLeaveRoom} />
+          <ImmersiveStudyRoom room={currentRoom} onLeave={handleLeaveRoom} />
         )}
       </main>
 
