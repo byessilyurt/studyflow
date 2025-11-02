@@ -32,15 +32,33 @@ export const MusicPlayerAdvanced = ({ isPlaying, onPlayStateChange }: MusicPlaye
       audioRef.current = new Audio();
       audioRef.current.loop = true;
       audioRef.current.volume = volume;
+
+      const savedVolume = localStorage.getItem('musicVolume');
+      if (savedVolume) {
+        const parsedVolume = parseFloat(savedVolume);
+        setVolume(parsedVolume);
+        audioRef.current.volume = parsedVolume;
+      }
     }
 
     const audio = audioRef.current;
-    audio.src = tracks[currentTrackIndex].url;
+    const newTrackUrl = tracks[currentTrackIndex].url;
+
+    if (audio.src !== newTrackUrl) {
+      const wasPlaying = !audio.paused;
+      audio.src = newTrackUrl;
+      audio.load();
+
+      if (wasPlaying && isPlaying) {
+        audio.play().catch(err => {
+          console.error('Track change play failed:', err);
+        });
+      }
+    }
 
     return () => {
       if (audio) {
         audio.pause();
-        audio.src = '';
       }
     };
   }, [currentTrackIndex]);
@@ -49,10 +67,19 @@ export const MusicPlayerAdvanced = ({ isPlaying, onPlayStateChange }: MusicPlaye
     if (!audioRef.current) return;
 
     if (isPlaying) {
-      audioRef.current.play().catch(err => {
-        console.log('Audio autoplay blocked:', err);
-      });
-      setWaveformActive(true);
+      const playPromise = audioRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            setWaveformActive(true);
+          })
+          .catch(err => {
+            console.error('Audio autoplay blocked:', err);
+            setWaveformActive(false);
+          });
+      } else {
+        setWaveformActive(true);
+      }
     } else {
       audioRef.current.pause();
       setWaveformActive(false);
@@ -87,7 +114,7 @@ export const MusicPlayerAdvanced = ({ isPlaying, onPlayStateChange }: MusicPlaye
 
   return (
     <div
-      className={`fixed bottom-20 left-4 bg-gradient-to-br from-purple-600 to-pink-600 rounded-2xl shadow-2xl transition-all duration-300 z-40 ${
+      className={`fixed bottom-4 right-4 bg-gradient-to-br from-purple-600 to-pink-600 rounded-2xl shadow-2xl transition-all duration-300 z-40 ${
         isExpanded ? 'w-80' : 'w-16'
       }`}
       onMouseEnter={() => setIsExpanded(true)}

@@ -6,6 +6,7 @@ import { Card } from '../UI/Card';
 import { useTimer } from '../../hooks/useTimer';
 import { useAppContext } from '../../context/AppContext';
 import { getAvatarUrl, formatTime, getThemeGradient, getRandomEncouragingMessage } from '../../utils/helpers';
+import { validateNumber } from '../../utils/security';
 import { themes, musicTracks } from '../../data/mockData';
 import { ChatPanel } from './ChatPanel';
 import { MusicPlayer } from '../Audio/MusicPlayer';
@@ -153,7 +154,7 @@ export const StudyRoomInterface = ({ room, onLeave }: StudyRoomInterfaceProps) =
                             min="1"
                             max="120"
                             value={customMinutes}
-                            onChange={(e) => setCustomMinutes(parseInt(e.target.value) || 1)}
+                            onChange={(e) => setCustomMinutes(validateNumber(e.target.value, 1, 120, 25))}
                             className="w-24 px-3 py-2 border border-gray-300 rounded-lg text-center"
                           />
                           <Button onClick={handleSetCustomTime} size="sm">
