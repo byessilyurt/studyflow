@@ -14,7 +14,6 @@ import { TimerModal } from './TimerModal';
 import { RoomStatsWidget } from './RoomStatsWidget';
 import { EnhancedChatPanel } from './EnhancedChatPanel';
 import { AmbientSoundMixer } from '../Audio/AmbientSoundMixer';
-import { MusicPlayerAdvanced } from '../Audio/MusicPlayerAdvanced';
 import { aiStudentService } from '../../lib/aiStudentService';
 
 interface ImmersiveStudyRoomProps {
@@ -29,7 +28,6 @@ export const ImmersiveStudyRoom = ({ room, onLeave }: ImmersiveStudyRoomProps) =
   const [notification, setNotification] = useState<string>('');
   const [confetti, setConfetti] = useState(false);
   const [aiStudents, setAiStudents] = useState<any[]>([]);
-  const [musicPlaying, setMusicPlaying] = useState(false);
 
   const { settings, updateSettings } = useUserSettings(state.currentUser?.id);
   const { participants, updateStatus } = usePresence(room.id, state.currentUser);
@@ -78,10 +76,8 @@ export const ImmersiveStudyRoom = ({ room, onLeave }: ImmersiveStudyRoomProps) =
   useEffect(() => {
     if (isRunning) {
       updateStatus(sessionType === 'study' ? 'focus' : 'break');
-      setMusicPlaying(true);
     } else {
       updateStatus('idle');
-      setMusicPlaying(false);
     }
   }, [isRunning, sessionType]);
 
@@ -315,11 +311,6 @@ export const ImmersiveStudyRoom = ({ room, onLeave }: ImmersiveStudyRoomProps) =
         volumes={settings.ambientVolumes}
         onVolumeChange={handleAmbientVolumeChange}
         isPlaying={isRunning}
-      />
-
-      <MusicPlayerAdvanced
-        isPlaying={musicPlaying}
-        onPlayStateChange={setMusicPlaying}
       />
 
       <TimerModal
