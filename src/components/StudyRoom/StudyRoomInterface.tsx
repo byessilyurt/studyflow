@@ -76,9 +76,13 @@ export const StudyRoomInterface = ({ room, onLeave }: StudyRoomInterfaceProps) =
     setIsMusicPlaying(!isMusicPlaying);
   };
 
+  // Calculate progress based on actual session duration
+  const studyDurationSeconds = 25 * 60; // 25 minutes default
+  const breakDurationSeconds = 5 * 60;  // 5 minutes default
+
   const progress = sessionType === 'study'
-    ? ((1500 - timeRemaining) / 1500) * 100
-    : ((300 - timeRemaining) / 300) * 100;
+    ? ((studyDurationSeconds - timeRemaining) / studyDurationSeconds) * 100
+    : ((breakDurationSeconds - timeRemaining) / breakDurationSeconds) * 100;
 
   return (
     <div className="min-h-screen relative overflow-hidden">

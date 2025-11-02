@@ -37,15 +37,28 @@ export const ImmersiveStudyRoom = ({ room, onLeave }: ImmersiveStudyRoomProps) =
     onLeave,
   });
 
-  const { isRunning, startTimer, stopTimer, resetTimer, setCustomDuration, timeRemaining, sessionType } = useTimer({
+  const {
+    isRunning,
+    startTimer,
+    stopTimer,
+    resetTimer,
+    setCustomDuration,
+    timeRemaining,
+    sessionType,
+    completedSessionType
+  } = useTimer({
     onSessionComplete: () => {
-      setNotification(sessionType === 'study' ? '🎉 Study session completed! +10 XP' : '✨ Break over! Ready to focus?');
-      if (sessionType === 'study') {
+      // Use completed session type for accurate notification
+      const wasStudySession = completedSessionType === 'study';
+      setNotification(wasStudySession ? '🎉 Study session completed! +10 XP' : '✨ Break over! Ready to focus?');
+      if (wasStudySession) {
         setConfetti(true);
         setTimeout(() => setConfetti(false), 3000);
       }
       setTimeout(() => setNotification(''), 3000);
-    }
+    },
+    studyDuration: settings.studyDuration,
+    breakDuration: settings.breakDuration
   });
 
   const theme = themes.find(t => t.name === room.theme);
