@@ -5,20 +5,33 @@ export const authService = {
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        data: {
+          name: name,
+        },
+      },
     });
 
     if (authError) throw authError;
     if (!authData.user) throw new Error('No user returned from signup');
 
+    // Note: Profile creation is now handled by the database trigger
+    // But we'll insert here as a fallback in case trigger fails
     const { error: profileError } = await supabase
       .from('profiles')
       .insert({
         id: authData.user.id,
         name,
+        email,
         avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${name}`,
-      });
+      })
+      .select()
+      .single();
 
-    if (profileError) throw profileError;
+    // Don't throw on conflict - trigger may have already created it
+    if (profileError && profileError.code !== '23505') {
+      console.error('Profile creation error:', profileError);
+    }
 
     return authData;
   },

@@ -175,6 +175,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const { data } = authService.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session?.user) {
         try {
+          // Wait a bit for trigger to create profile if this is a new signup
+          await new Promise(resolve => setTimeout(resolve, 500));
+
           const profile = await profileService.getProfile(session.user.id);
           if (profile) {
             const user: User = {
@@ -199,9 +202,15 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
               level: profile.level,
               experience: profile.experience,
             }});
+          } else {
+            console.error('Profile not found for user:', session.user.id);
+            // Show user feedback that profile creation failed
+            alert('There was an issue setting up your profile. Please try logging in again or contact support.');
           }
         } catch (error) {
           console.error('Error loading profile:', error);
+          // Show user feedback about the error
+          alert('Unable to load your profile. Please try refreshing the page.');
         }
       } else if (event === 'SIGNED_OUT') {
         dispatch({ type: 'LOAD_DATA', payload: initialState });

@@ -27,17 +27,20 @@ CREATE TABLE IF NOT EXISTS profiles (
 
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Profiles are viewable by everyone" ON profiles;
 CREATE POLICY "Profiles are viewable by everyone"
   ON profiles FOR SELECT
   TO authenticated
   USING (true);
 
+DROP POLICY IF EXISTS "Users can update own profile" ON profiles;
 CREATE POLICY "Users can update own profile"
   ON profiles FOR UPDATE
   TO authenticated
   USING (auth.uid() = id)
   WITH CHECK (auth.uid() = id);
 
+DROP POLICY IF EXISTS "Users can insert own profile" ON profiles;
 CREATE POLICY "Users can insert own profile"
   ON profiles FOR INSERT
   TO authenticated
@@ -62,22 +65,26 @@ CREATE TABLE IF NOT EXISTS study_rooms (
 
 ALTER TABLE study_rooms ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Study rooms are viewable by everyone" ON study_rooms;
 CREATE POLICY "Study rooms are viewable by everyone"
   ON study_rooms FOR SELECT
   TO authenticated
   USING (true);
 
+DROP POLICY IF EXISTS "Users can create study rooms" ON study_rooms;
 CREATE POLICY "Users can create study rooms"
   ON study_rooms FOR INSERT
   TO authenticated
   WITH CHECK (auth.uid() = creator_id);
 
+DROP POLICY IF EXISTS "Room creators can update their rooms" ON study_rooms;
 CREATE POLICY "Room creators can update their rooms"
   ON study_rooms FOR UPDATE
   TO authenticated
   USING (auth.uid() = creator_id)
   WITH CHECK (auth.uid() = creator_id);
 
+DROP POLICY IF EXISTS "Room creators can delete their rooms" ON study_rooms;
 CREATE POLICY "Room creators can delete their rooms"
   ON study_rooms FOR DELETE
   TO authenticated
@@ -95,22 +102,26 @@ CREATE TABLE IF NOT EXISTS room_participants (
 
 ALTER TABLE room_participants ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Room participants are viewable by everyone" ON room_participants;
 CREATE POLICY "Room participants are viewable by everyone"
   ON room_participants FOR SELECT
   TO authenticated
   USING (true);
 
+DROP POLICY IF EXISTS "Users can join rooms" ON room_participants;
 CREATE POLICY "Users can join rooms"
   ON room_participants FOR INSERT
   TO authenticated
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update own participation" ON room_participants;
 CREATE POLICY "Users can update own participation"
   ON room_participants FOR UPDATE
   TO authenticated
   USING (auth.uid() = user_id)
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can leave rooms" ON room_participants;
 CREATE POLICY "Users can leave rooms"
   ON room_participants FOR DELETE
   TO authenticated
@@ -128,6 +139,7 @@ CREATE TABLE IF NOT EXISTS chat_messages (
 
 ALTER TABLE chat_messages ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Chat messages are viewable by room participants" ON chat_messages;
 CREATE POLICY "Chat messages are viewable by room participants"
   ON chat_messages FOR SELECT
   TO authenticated
@@ -140,6 +152,7 @@ CREATE POLICY "Chat messages are viewable by room participants"
     )
   );
 
+DROP POLICY IF EXISTS "Users can send messages to joined rooms" ON chat_messages;
 CREATE POLICY "Users can send messages to joined rooms"
   ON chat_messages FOR INSERT
   TO authenticated
@@ -166,6 +179,7 @@ CREATE TABLE IF NOT EXISTS achievements (
 
 ALTER TABLE achievements ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Achievements are viewable by everyone" ON achievements;
 CREATE POLICY "Achievements are viewable by everyone"
   ON achievements FOR SELECT
   TO authenticated
@@ -182,11 +196,13 @@ CREATE TABLE IF NOT EXISTS user_achievements (
 
 ALTER TABLE user_achievements ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "User achievements are viewable by everyone" ON user_achievements;
 CREATE POLICY "User achievements are viewable by everyone"
   ON user_achievements FOR SELECT
   TO authenticated
   USING (true);
 
+DROP POLICY IF EXISTS "Users can earn achievements" ON user_achievements;
 CREATE POLICY "Users can earn achievements"
   ON user_achievements FOR INSERT
   TO authenticated
@@ -206,16 +222,19 @@ CREATE TABLE IF NOT EXISTS study_sessions (
 
 ALTER TABLE study_sessions ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view own study sessions" ON study_sessions;
 CREATE POLICY "Users can view own study sessions"
   ON study_sessions FOR SELECT
   TO authenticated
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can create own study sessions" ON study_sessions;
 CREATE POLICY "Users can create own study sessions"
   ON study_sessions FOR INSERT
   TO authenticated
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update own study sessions" ON study_sessions;
 CREATE POLICY "Users can update own study sessions"
   ON study_sessions FOR UPDATE
   TO authenticated
@@ -286,16 +305,19 @@ CREATE TABLE IF NOT EXISTS user_settings (
 
 ALTER TABLE user_settings ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view own settings" ON user_settings;
 CREATE POLICY "Users can view own settings"
   ON user_settings FOR SELECT
   TO authenticated
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert own settings" ON user_settings;
 CREATE POLICY "Users can insert own settings"
   ON user_settings FOR INSERT
   TO authenticated
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update own settings" ON user_settings;
 CREATE POLICY "Users can update own settings"
   ON user_settings FOR UPDATE
   TO authenticated
@@ -314,16 +336,19 @@ CREATE TABLE IF NOT EXISTS message_reactions (
 
 ALTER TABLE message_reactions ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Anyone can view reactions" ON message_reactions;
 CREATE POLICY "Anyone can view reactions"
   ON message_reactions FOR SELECT
   TO authenticated
   USING (true);
 
+DROP POLICY IF EXISTS "Users can add reactions" ON message_reactions;
 CREATE POLICY "Users can add reactions"
   ON message_reactions FOR INSERT
   TO authenticated
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can remove own reactions" ON message_reactions;
 CREATE POLICY "Users can remove own reactions"
   ON message_reactions FOR DELETE
   TO authenticated
@@ -339,16 +364,19 @@ CREATE TABLE IF NOT EXISTS room_stats (
 
 ALTER TABLE room_stats ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Anyone can view room stats" ON room_stats;
 CREATE POLICY "Anyone can view room stats"
   ON room_stats FOR SELECT
   TO authenticated
   USING (true);
 
+DROP POLICY IF EXISTS "System can update room stats" ON room_stats;
 CREATE POLICY "System can update room stats"
   ON room_stats FOR INSERT
   TO authenticated
   WITH CHECK (true);
 
+DROP POLICY IF EXISTS "System can modify room stats" ON room_stats;
 CREATE POLICY "System can modify room stats"
   ON room_stats FOR UPDATE
   TO authenticated
@@ -427,6 +455,7 @@ CREATE TABLE IF NOT EXISTS ai_students (
 
 ALTER TABLE ai_students ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Anyone can view AI students" ON ai_students;
 CREATE POLICY "Anyone can view AI students"
   ON ai_students FOR SELECT
   TO authenticated
@@ -443,6 +472,7 @@ CREATE TABLE IF NOT EXISTS room_ai_students (
 
 ALTER TABLE room_ai_students ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Anyone can view room AI students" ON room_ai_students;
 CREATE POLICY "Anyone can view room AI students"
   ON room_ai_students FOR SELECT
   TO authenticated
