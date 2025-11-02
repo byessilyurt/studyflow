@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Trophy, Clock, Target, Flame } from 'lucide-react';
+import { Zap, Users } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
 interface RoomStatsWidgetProps {
@@ -57,52 +57,57 @@ export const RoomStatsWidget = ({ roomId, participantCount }: RoomStatsWidgetPro
 
   const hours = Math.floor(stats.totalFocusTime / 3600);
   const minutes = Math.floor((stats.totalFocusTime % 3600) / 60);
+  const totalMinutes = Math.floor(stats.totalFocusTime / 60);
+
+  // Calculate streak/energy level based on activity
+  const energyLevel = Math.min(100, Math.floor((totalMinutes / 100) * 100));
+  const streakDays = Math.floor(stats.totalSessions / 4); // Rough estimate
 
   return (
-    <div className="fixed bottom-6 left-6 z-30">
-      <div className="bg-white bg-opacity-90 backdrop-blur-md rounded-2xl shadow-2xl border border-white border-opacity-30 overflow-hidden">
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-4 py-2">
+    <div className="fixed top-20 right-6 z-30 animate-slide-in">
+      {/* Energy/Streak Indicator */}
+      <div className="bg-gradient-to-br from-purple-600 via-pink-600 to-orange-500 rounded-2xl p-1 shadow-2xl mb-3">
+        <div className="bg-black bg-opacity-40 backdrop-blur-xl rounded-xl px-4 py-3">
+          <div className="flex items-center space-x-3">
+            <div className="relative">
+              <Zap className="w-6 h-6 text-yellow-300 animate-pulse" />
+              <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-300 rounded-full animate-ping" />
+            </div>
+            <div>
+              <p className="text-xs text-white opacity-75 font-medium">Group Energy</p>
+              <div className="flex items-center space-x-2">
+                <div className="w-24 h-2 bg-white bg-opacity-20 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-yellow-300 via-orange-400 to-red-500 rounded-full transition-all duration-500"
+                    style={{ width: `${energyLevel}%` }}
+                  />
+                </div>
+                <span className="text-white font-bold text-sm">{energyLevel}%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Active Learners Badge */}
+      <div className="bg-white bg-opacity-10 backdrop-blur-xl rounded-xl border border-white border-opacity-20 px-4 py-2 shadow-xl">
+        <div className="flex items-center justify-between space-x-4">
           <div className="flex items-center space-x-2">
-            <Trophy className="w-4 h-4 text-yellow-300" />
-            <span className="text-sm font-bold text-white">Room Stats</span>
+            <Users className="w-4 h-4 text-white" />
+            <span className="text-white font-semibold text-sm">{participantCount} studying</span>
           </div>
+          {streakDays > 0 && (
+            <div className="flex items-center space-x-1">
+              <span className="text-2xl">🔥</span>
+              <span className="text-white font-bold text-sm">{streakDays}d</span>
+            </div>
+          )}
         </div>
-
-        <div className="p-4 flex items-center space-x-6">
-          <div className="flex items-center space-x-2 group">
-            <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-              <Clock className="w-4 h-4 text-white" />
-            </div>
-            <div>
-              <p className="text-xs text-gray-500 font-medium">Focus Time</p>
-              <p className="text-lg font-bold text-gray-900">{hours}h {minutes}m</p>
-            </div>
-          </div>
-
-          <div className="w-px h-12 bg-gray-200" />
-
-          <div className="flex items-center space-x-2 group">
-            <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-              <Target className="w-4 h-4 text-white" />
-            </div>
-            <div>
-              <p className="text-xs text-gray-500 font-medium">Sessions</p>
-              <p className="text-lg font-bold text-gray-900">{stats.totalSessions}</p>
-            </div>
-          </div>
-
-          <div className="w-px h-12 bg-gray-200" />
-
-          <div className="flex items-center space-x-2 group">
-            <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-amber-500 rounded-lg flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-              <Flame className="w-4 h-4 text-white" />
-            </div>
-            <div>
-              <p className="text-xs text-gray-500 font-medium">Learners</p>
-              <p className="text-lg font-bold text-gray-900">{participantCount}</p>
-            </div>
-          </div>
-        </div>
+        {totalMinutes > 60 && (
+          <p className="text-xs text-white opacity-75 mt-1 text-center">
+            {hours}h {minutes}m conquered together
+          </p>
+        )}
       </div>
     </div>
   );

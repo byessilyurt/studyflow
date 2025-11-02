@@ -255,43 +255,58 @@ export const ImmersiveStudyRoom = ({ room, onLeave }: ImmersiveStudyRoomProps) =
 
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="text-center">
-                <div className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold mb-4 ${
+                {/* Motivational session type badge */}
+                <div className={`inline-flex items-center px-6 py-3 rounded-full text-base font-bold mb-6 backdrop-blur-md border-2 ${
                   sessionType === 'study'
-                    ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/50'
-                    : 'bg-green-500 text-white shadow-lg shadow-green-500/50'
+                    ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white border-blue-300 shadow-2xl shadow-blue-500/50 animate-pulse'
+                    : 'bg-gradient-to-r from-green-500 to-emerald-600 text-white border-green-300 shadow-2xl shadow-green-500/50'
                 }`}>
-                  {sessionType === 'study' ? '🔥 Focus Mode' : '☕ Break Time'}
+                  {sessionType === 'study' ? (
+                    <><span className="text-2xl mr-2">⚡</span> DEEP FOCUS ACTIVATED</>
+                  ) : (
+                    <><span className="text-2xl mr-2">🌟</span> RECHARGE TIME</>
+                  )}
                 </div>
 
                 <button
                   onClick={() => !isRunning && setShowTimerModal(true)}
-                  className={`text-7xl font-bold text-white mb-6 font-mono drop-shadow-2xl ${
-                    !isRunning ? 'hover:scale-105 cursor-pointer' : 'cursor-default'
-                  } transition-transform`}
+                  className={`text-8xl font-bold text-white mb-4 font-mono drop-shadow-2xl ${
+                    !isRunning ? 'hover:scale-110 cursor-pointer' : 'cursor-default'
+                  } transition-transform ${isRunning ? 'animate-pulse-slow' : ''}`}
                   disabled={isRunning}
                 >
                   {formatTime(timeRemaining)}
                 </button>
 
-                {!isRunning && (
-                  <p className="text-sm text-white opacity-75 mb-6">Click to customize</p>
+                {!isRunning ? (
+                  <p className="text-base text-white opacity-90 mb-8 font-semibold">
+                    Click time to customize your session
+                  </p>
+                ) : (
+                  <p className="text-base text-white opacity-90 mb-8 font-semibold animate-fade-in">
+                    {sessionType === 'study' ? 'You got this! Stay in the zone 💪' : 'Relax and recharge your mind 🧘'}
+                  </p>
                 )}
 
                 <div className="flex items-center justify-center space-x-4">
                   <Button
                     onClick={handleTimerToggle}
                     size="lg"
-                    className="px-10 py-6 text-xl font-bold shadow-2xl hover:shadow-blue-500/50 transition-all duration-300"
+                    className={`px-12 py-7 text-2xl font-black shadow-2xl transition-all duration-300 ${
+                      isRunning
+                        ? 'bg-gradient-to-r from-red-500 to-pink-600 hover:shadow-red-500/50'
+                        : 'bg-gradient-to-r from-blue-500 to-purple-600 hover:shadow-blue-500/50 animate-bounce-subtle'
+                    }`}
                   >
                     {isRunning ? (
                       <>
-                        <Pause className="w-7 h-7 mr-2" />
-                        Pause
+                        <Pause className="w-8 h-8 mr-3" />
+                        PAUSE
                       </>
                     ) : (
                       <>
-                        <Play className="w-7 h-7 mr-2" />
-                        Start
+                        <Play className="w-8 h-8 mr-3" />
+                        LET'S GO!
                       </>
                     )}
                   </Button>
@@ -300,7 +315,7 @@ export const ImmersiveStudyRoom = ({ room, onLeave }: ImmersiveStudyRoomProps) =
                     variant="outline"
                     onClick={resetTimer}
                     size="lg"
-                    className="px-6 py-6 bg-white bg-opacity-20 backdrop-blur-md border-2 border-white border-opacity-30 text-white hover:bg-opacity-30"
+                    className="px-6 py-7 bg-white bg-opacity-10 backdrop-blur-md border-2 border-white border-opacity-40 text-white hover:bg-opacity-20 hover:scale-105 transition-all"
                   >
                     <RotateCcw className="w-6 h-6" />
                   </Button>
@@ -309,7 +324,7 @@ export const ImmersiveStudyRoom = ({ room, onLeave }: ImmersiveStudyRoomProps) =
                     variant="outline"
                     onClick={() => setShowTimerModal(true)}
                     size="lg"
-                    className="px-6 py-6 bg-white bg-opacity-20 backdrop-blur-md border-2 border-white border-opacity-30 text-white hover:bg-opacity-30"
+                    className="px-6 py-7 bg-white bg-opacity-10 backdrop-blur-md border-2 border-white border-opacity-40 text-white hover:bg-opacity-20 hover:scale-105 transition-all"
                   >
                     <Settings2 className="w-6 h-6" />
                   </Button>
