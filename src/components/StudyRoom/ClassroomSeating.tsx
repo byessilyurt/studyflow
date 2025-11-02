@@ -117,33 +117,36 @@ export const ClassroomSeating = React.memo(({ participants, aiStudents = [] }: C
 
   const totalParticipants = allParticipants.length;
 
-  const radius = Math.min(totalParticipants * 15, 300);
+  // Classroom arc configuration - participants sit ON the arc line
+  const radius = 35; // Fixed radius for consistent semicircle
   const centerX = 50;
-  const centerY = totalParticipants > 5 ? 20 : 15;
-  const maxAngle = totalParticipants > 8 ? 180 : 160;
+  const centerY = 50; // Center point for arc calculation
+  const maxAngle = 180; // Full semicircle
   const angleStep = totalParticipants > 1 ? maxAngle / (totalParticipants - 1) : 0;
-  const startAngle = totalParticipants > 8 ? -90 : -80;
+  const startAngle = -90; // Start from left side of semicircle
 
   return (
     <div className="relative w-full h-80 mb-8">
       <svg
         className="absolute inset-0 w-full h-full pointer-events-none"
-        viewBox="0 0 100 40"
+        viewBox="0 0 100 100"
         preserveAspectRatio="xMidYMid meet"
       >
+        {/* Semicircle arc line where participants sit */}
         <path
-          d={`M ${centerX - 40} ${centerY + 5} A 40 40 0 0 1 ${centerX + 40} ${centerY + 5}`}
+          d={`M ${centerX - radius} ${centerY} A ${radius} ${radius} 0 0 1 ${centerX + radius} ${centerY}`}
           stroke="rgba(255, 255, 255, 0.3)"
-          strokeWidth="0.2"
-          strokeDasharray="1,1"
+          strokeWidth="0.3"
+          strokeDasharray="2,2"
           fill="none"
         />
       </svg>
 
       {allParticipants.map((participant, index) => {
         const angle = (startAngle + (totalParticipants > 1 ? index * angleStep : 0)) * (Math.PI / 180);
+        // Position participants ON the arc line (not inside)
         const x = centerX + radius * Math.cos(angle);
-        const y = centerY + (radius * Math.sin(angle)) * 0.4;
+        const y = centerY + radius * Math.sin(angle);
 
         return (
           <ParticipantAvatar

@@ -90,7 +90,15 @@ export const ImmersiveStudyRoom = ({ room, onLeave }: ImmersiveStudyRoomProps) =
   };
 
   const handleLeave = async () => {
-    await leave();
+    try {
+      console.log('Leaving room...');
+      await leave();
+      console.log('Left room successfully');
+    } catch (error) {
+      console.error('Error leaving room:', error);
+      // Force leave anyway
+      onLeave();
+    }
   };
 
   const handleSaveTimer = async (studyMinutes: number, breakMinutes: number) => {
